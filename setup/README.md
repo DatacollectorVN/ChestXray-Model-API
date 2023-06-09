@@ -4,6 +4,7 @@ Following:
 - Setup [miniconda](https://www.cyberithub.com/how-to-install-miniconda-on-ubuntu-20-04-lts-focal-fossa/)
 - Setup [`git`]
 - Setup `Docker`
+- Setup [ODBC Driver](https://itslinuxfoss.com/install-microsoft-odbc-driver-sql-server/)
 
 ## 3. Encounter error:
 - [ImportError: libGL.so.1](https://stackoverflow.com/questions/55313610/importerror-libgl-so-1-cannot-open-shared-object-file-no-such-file-or-directo)

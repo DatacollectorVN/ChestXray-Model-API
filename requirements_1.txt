@@ -19,3 +19,6 @@ azure-storage-file-datalake==12.11.0
 azure-storage-blob==12.16.0
 azure-core==1.26.4
 loguru==0.7.0
+fastapi==0.96.0
+uvicorn==0.22.0
+pyodbc==4.0.39

@@ -27,7 +27,7 @@ class ConfigReader(object):
                 self.__getattribute__(section)[sub_section] = item # add value into attribute
 
 
-config_reader = ConfigReader(file_name = 'config.ini')
+config_reader = ConfigReader(file_name = os.path.join(os.getcwd(), 'app', 'config', 'config.ini'))
 
 if __name__ == '__main__':
     print(config_reader.azure_storage['azure_storage_connection_string'])

@@ -1,2 +1,5 @@
 **/__pycache__
 **/.jpeg
+temp/
+app/imgs/**
+app/models/**
