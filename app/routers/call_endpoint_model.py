@@ -1,6 +1,9 @@
 import os, uuid, sys
 sys.path.append(os.getcwd())
 import json
+import pandas as pd
+import numpy as np
+from datetime import datetime
 import urllib
 from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, Request
@@ -20,6 +23,9 @@ STM_UPDATE = """
     SET [{col_update}] = '%s'
     WHERE [{col_ref}] = %s
 """
+COL_REF = 'id'
+
+TBL_INSERT = 'users_disease_prediction'
 
 
 class EntryAPI(BaseModel):
@@ -33,6 +39,16 @@ class EntryAPI(BaseModel):
 async def submit_predict(item: EntryAPI):
     engine = None
     try:
+        now = datetime.now()
+        month_str = str(now.month)
+        if len(month_str) == 1:
+            month_str = '0' + month_str
+        
+        day_str = str(now.day)
+        if len(day_str) == 1:
+            day_str = '0' + day_str
+
+        date_key = int(f'{now.year}{month_str}{day_str}')
         file_system_name = item.file_system_name
         file_path = item.file_path
         output_folder_path = item.output_folder_path
@@ -77,7 +93,7 @@ async def submit_predict(item: EntryAPI):
             raise Exception(f'inference_handler made error')
         
         logger.info(f'[submit_predict]__: Completed inference')
-        
+
         output_img_path = os.path.join(CURRENT_DIR, config_reader.azure_storage['imgs_dir_path']
             , config_reader.azure_storage['output_img_file_without_extension'] + file_path_extension
         )
@@ -88,8 +104,8 @@ async def submit_predict(item: EntryAPI):
 
         # uploaded output image to data lake
         input_img_file = file_path.split('/')[1] # input_image_<img_id>_<user_id>.*
-        img_id = input_img_file.split('_')[2]
-        user_id = input_img_file.split('_')[3].split('.')[0]
+        img_id = int(input_img_file.split('_')[2])
+        user_id = int(input_img_file.split('_')[3].split('.')[0])
         output_file = f'output_image_{img_id}_{user_id}{file_path_extension}'
         output_path = os.path.join(output_folder_path, output_file)
         state_upload = upload_file(service_client = service_client, file_system_name = file_system_name
@@ -100,18 +116,46 @@ async def submit_predict(item: EntryAPI):
         logger.info(f'[submit_predict]__: Uploaded output file to {output_path}')
 
         # update sql database
-        col_ref = 'id'
         with CursorMSSQLDatabase() as cursor:
             col_update = 'output_image'
-            stm_update = STM_UPDATE.format(tbl_update = TBL_UPDATE, col_update = col_update, col_ref = col_ref)
+            stm_update = STM_UPDATE.format(tbl_update = TBL_UPDATE, col_update = col_update, col_ref = COL_REF)
             stm_update = stm_update % (output_path, img_id)
             cursor.execute(stm_update)
             col_update = 'status'
-            stm_update = STM_UPDATE.format(tbl_update = TBL_UPDATE, col_update = col_update, col_ref = col_ref)
+            stm_update = STM_UPDATE.format(tbl_update = TBL_UPDATE, col_update = col_update, col_ref = COL_REF)
             stm_update = stm_update % ('Complete', img_id)
             cursor.execute(stm_update)
         
-        logger.info(f'[submit_predict]__: Completed update sql database')
+        logger.info(f'[submit_predict]__: Completed update to {TBL_UPDATE}')
+
+        # insert sql database
+        num_disease = len(results['pred_classes_id'])
+        if num_disease > 0:
+            location_xyxy = []
+            for bbox in results['pred_bboxes_xyxy']:
+                bbox_str = f'{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}'
+                location_xyxy.append(bbox_str)
+
+            df_insert = pd.DataFrame({'timestamp': [now for _ in range(num_disease)]
+                , 'date_key': [date_key for _ in range(num_disease)]
+                , 'image_prediction_id': [img_id for _ in range(num_disease)]
+                , 'disease': results['pred_classes'].tolist()
+                , 'location_xyxy': location_xyxy
+                , 'score': results['pred_confidence_scores'].tolist()
+                , 'user_id': [user_id for _ in range(num_disease)]}
+            )
+        else:
+            df_insert = pd.DataFrame({'timestamp': [now]
+                , 'date_key': [date_key]
+                , 'image_prediction_id': [img_id]
+                , 'disease': [np.nan]
+                , 'location_xyxy': [np.nan]
+                , 'score': [np.nan]
+                , 'user_id': [user_id]}
+            )
+        df_insert.to_sql(TBL_INSERT, con = engine, if_exists = 'append', index = False)
+        logger.info(f'[submit_predict]__: Completed insert to {TBL_INSERT}')
+
 
     except Exception as e:
         logger.error('submit_predict]__Exception: {}'.format(e))

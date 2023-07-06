@@ -51,17 +51,19 @@ def inference_handler(input_img_path):
         start = time.time()
         outputs = detectron2_prediction(model, img)
         duration = time.time() - start
-        pred_bboxes, pred_confidence_scores, pred_classes = get_outputs_detectron2(outputs)
+        pred_bboxes, pred_confidence_scores, pred_classes_id = get_outputs_detectron2(outputs)
         pred_bboxes = pred_bboxes.detach().numpy().astype(int)
         pred_confidence_scores = pred_confidence_scores.detach().numpy()
         pred_confidence_scores = np.round(pred_confidence_scores, 2)
-        pred_classes = pred_classes.detach().numpy().astype(int)
+        pred_classes_id = pred_classes_id.detach().numpy().astype(int)
+        pred_classes = np.asarray([params["CLASSES_NAME"][i] for i in pred_classes_id])
         output_img = draw_bbox_infer(img, pred_bboxes, 
-            pred_classes, pred_confidence_scores,
+            pred_classes_id, pred_confidence_scores,
             params["CLASSES_NAME"], params["COLOR"], 5
         )
         
-        results = {'output_img': output_img, 'pred_classes': pred_classes
+        results = {'output_img': output_img, 'pred_classes_id': pred_classes_id
+            , 'pred_classes': pred_classes, 'pred_bboxes_xyxy': pred_bboxes
             , 'pred_confidence_scores': pred_confidence_scores, 'duration': duration
         }
 
