@@ -158,7 +158,7 @@ async def submit_predict(item: EntryAPI):
 
 
     except Exception as e:
-        logger.error('submit_predict]__Exception: {}'.format(e))
+        logger.error('[submit_predict]__Exception: {}'.format(e))
         raise HTTPException(status_code=503, detail="Nope! Has the exception while handling.")
     finally:
         if engine:
