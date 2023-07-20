@@ -3,7 +3,7 @@ ARG VEnv=WebAppPy38
 ARG PyVersion=3.8
 ENV PATH="/root/miniconda3/bin:${PATH}"
 ARG PATH="/root/miniconda3/bin:${PATH}"
-WORKDIR /app
+WORKDIR /ModelAPI
 
 # Install dependencies and utilities
 RUN apt-get update && apt-get install -y \
@@ -19,7 +19,7 @@ RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
     && ACCEPT_EULA=Y apt-get install -y msodbcsql18
 
 # Install unixODBC
-RUN apt-get install -y unixodbc
+RUN apt-get install -y unixodbc gcc ffmpeg libsm6 libxext6 libgl1
 
 # Set ODBC configurations
 RUN echo "export PATH=\$PATH:/opt/mssql-tools/bin" >> ~/.bashrc \
@@ -42,4 +42,10 @@ ENV PATH="/opt/conda/envs/$VEnv/bin:$PATH"
 # copy directory
 COPY . .
 
+# install requirement
 RUN pip install -r requirements.txt
+
+# dowload best model
+RUN python app/src/download_best_model.py 
+
+ENTRYPOINT python app/main.py

@@ -1,6 +1,7 @@
 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch1.9/index.html
 detectron2
 fastapi==0.100.0
+cython
 loguru==0.7.0
 numpy==1.20.3
 opencv_contrib_python==4.4.0.42

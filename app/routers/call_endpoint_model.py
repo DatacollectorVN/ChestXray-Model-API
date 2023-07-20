@@ -75,6 +75,10 @@ async def submit_predict(item: EntryAPI):
         engine = MSSQLDatabase.get_engine()
 
         # dowload input image from data lake to fix name: app/imgs/input_img.*
+        ## create image directory path
+        if os.path.isdir(config_reader.azure_storage['imgs_dir_path']) is False:
+            os.makedirs(config_reader.azure_storage['imgs_dir_path'], exist_ok = True)
+
         file_path_extension = os.path.splitext(file_path)[1]
         input_img_path = os.path.join(CURRENT_DIR, config_reader.azure_storage['imgs_dir_path']
             , config_reader.azure_storage['input_img_file_without_extension'] + file_path_extension

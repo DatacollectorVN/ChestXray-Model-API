@@ -7,7 +7,6 @@ from app.src.utils import logger
 from app.config.config_reader import ConfigReader
 
 def initialize_storage_account(storage_account_name, storage_account_key):
-    
     try:  
         service_client = DataLakeServiceClient(account_url='{}://{}.dfs.core.windows.net'.format(
             'https', storage_account_name), credential=storage_account_key)

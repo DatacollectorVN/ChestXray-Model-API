@@ -1,0 +1,1 @@
+docker build -t chestxrayapi . --platform linux/x86_64
